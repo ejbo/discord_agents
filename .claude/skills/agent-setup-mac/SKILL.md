@@ -1,6 +1,6 @@
 ---
-name: agent-setup
-description: Set up a new isolated Claude bot in agents_team — creates the agent dir, seeds the Discord plugin cache, patches the plugin's /discord:access and /discord:configure skills to honor $DISCORD_STATE_DIR, writes a CLAUDE.md template, and adds a launch alias. Use when adding a new bot (claude-b, claude-c, hermes-x, etc.) so it runs concurrently with other bots without colliding on Discord state.
+name: agent-setup-mac
+description: macOS-specific version of agent-setup. Creates a new isolated Claude bot under agents/<name>/, copies+patches the Discord plugin, writes settings.json, and adds a launch alias to ~/.zshrc. Use on macOS; for WSL2/Linux use /agent-setup-wsl.
 user-invocable: true
 allowed-tools:
   - Read
@@ -10,9 +10,9 @@ allowed-tools:
   - AskUserQuestion
 ---
 
-# /agent-setup — Create a new isolated Claude bot
+# /agent-setup-mac — Create a new isolated Claude bot
 
-Usage: `/agent-setup <name> [<alias>]`
+Usage: `/agent-setup-mac <name> [<alias>]`
 
 - `<name>` — agent directory name, alphanumeric+dash (e.g. `claude-b`, `hermes-x`).
   The bot lives at `agents/<name>/`.

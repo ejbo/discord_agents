@@ -63,7 +63,7 @@ session needs:
 4. Its own Discord bot Application (separate token; Discord rejects
    concurrent gateway connections with the same token).
 
-The `/agent-setup` skill in `.claude/skills/agent-setup/` automates the
+The `/agent-setup-mac` and `/agent-setup-wsl` skills in `.claude/skills/` automates the
 local filesystem side of this — directories, plugin cache copy, SKILL.md
 patches, settings.json, and the shell alias.
 
@@ -208,42 +208,16 @@ Inside the WSL user shell, follow [1.A macOS / Linux](#1a-macos--linux)
 verbatim — apt + Node + Claude Code + plugin install. Then proceed to
 Part 2.
 
-### 1.C Windows native (PowerShell)
+### 1.C Native Windows (PowerShell) — not directly supported
 
-If you don't want WSL, the `/agent-setup-windows` skill mirrors
-`/agent-setup` in pure PowerShell. Bootstrap differences:
+This repo ships only `/agent-setup-mac` (macOS / zsh) and
+`/agent-setup-wsl` (Linux / bash) skills. On Windows, use **WSL2**
+(see 1.B above) and run `/agent-setup-wsl` inside the WSL Ubuntu
+shell — that's the smoother path.
 
-```powershell
-# Claude Code
-irm claude.ai/install.ps1 | iex
-
-# Node.js 20 LTS
-winget install OpenJS.NodeJS.LTS
-
-# Project root
-New-Item -ItemType Directory -Force "$env:USERPROFILE\Projects\agents_team\shared" | Out-Null
-
-# Plugin install (same as macOS)
-claude
-# session:
-/plugin marketplace add anthropics/claude-plugins-official
-/plugin install discord@claude-plugins-official
-/exit
-```
-
-Native Windows ergonomics caveats:
-- Launchers go to `$PROFILE` as PowerShell functions (not aliases),
-  since PS aliases can't carry env vars.
-- The plugin server.ts patch writes a Windows-shaped peer-bots path
-  via `$env:USERPROFILE`.
-- File ACLs replace `chmod 600`; the skill applies `icacls /inheritance:r`.
-- If `$PROFILE` script doesn't load, run
-  `Set-ExecutionPolicy -Scope CurrentUser RemoteSigned`.
-
-After bootstrap, you use `/agent-setup-windows <name>` instead of
-`/agent-setup <name>`. The rest of this doc shows the Unix flow; for
-Windows, see `.claude/skills/agent-setup-windows/SKILL.md` for the
-PowerShell equivalents.
+A native PowerShell variant is doable (separate plugin patch with
+`%USERPROFILE%`-shaped paths, `$PROFILE` function instead of alias)
+but isn't packaged in this repo.
 
 ---
 
@@ -886,8 +860,8 @@ agents_team/
 ├── .claude/
 │   ├── settings.json                 ← project-level: enabledPlugins
 │   └── skills/
-│       ├── agent-setup/SKILL.md           ← macOS/Linux/WSL slash command
-│       └── agent-setup-windows/SKILL.md   ← native Windows slash command
+│       ├── agent-setup-mac/SKILL.md   ← /agent-setup-mac (macOS)
+│       └── agent-setup-wsl/SKILL.md   ← /agent-setup-wsl (WSL2/Linux)
 ├── shared/
 │   └── peer-bots.json                ← bot-to-bot allowlist + rate limit
 └── agents/

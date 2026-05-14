@@ -23,7 +23,7 @@ via `@`-mentions (gated by a per-sender rate-limited allowlist).
 
 ## Highlights
 
-- **One slash command to add a bot**: `/agent-setup <name>` scaffolds the
+- **One slash command to add a bot**: `/agent-setup-mac <name>` (or `/agent-setup-wsl <name>` on WSL2/Linux) scaffolds the
   agent directory, copies and patches the Discord plugin, writes
   permissions, and registers a launch alias.
 - **Bot-to-bot `@`-mention support**: the upstream Discord plugin drops
@@ -33,8 +33,8 @@ via `@`-mentions (gated by a per-sender rate-limited allowlist).
   Discord state are scoped to its own directory via `CLAUDE_CONFIG_DIR`
   and `DISCORD_STATE_DIR` env vars. Two bots on the same machine never
   collide.
-- **Cross-platform**: ships with `/agent-setup` (macOS/Linux/WSL bash)
-  and `/agent-setup-windows` (native PowerShell).
+- **Cross-platform**: ships with `/agent-setup-mac` for macOS
+  and `/agent-setup-wsl` for WSL2 / Linux.
 - **Migration-friendly**: roles, memory, and allowlists are git-tracked;
   the only things that need an out-of-band transfer are Discord bot
   tokens (which must never go through git — Discord auto-revokes leaked
@@ -49,7 +49,7 @@ After installing Claude Code and the Discord plugin (see [SETUP.md
 cd ~/Projects && git clone <this-repo> agents_team && cd agents_team
 claude
 # In the Claude session:
-/agent-setup claude-a
+/agent-setup-mac claude-a    # or /agent-setup-wsl on Linux
 /exit
 
 source ~/.bashrc                     # or ~/.zshrc
@@ -76,8 +76,8 @@ agents_team/
 ├── SETUP.md               ← full deployment guide (read this for setup)
 ├── .gitignore
 ├── .claude/skills/
-│   ├── agent-setup/             ← /agent-setup for macOS/Linux/WSL
-│   └── agent-setup-windows/     ← /agent-setup-windows for native Windows
+│   ├── agent-setup-mac/         ← /agent-setup-mac (macOS, writes to ~/.zshrc)
+│   └── agent-setup-wsl/         ← /agent-setup-wsl (WSL2/Linux, writes to ~/.bashrc)
 ├── shared/
 │   └── peer-bots.json     ← cross-bot allowlist
 └── agents/
