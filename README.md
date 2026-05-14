@@ -1,115 +1,184 @@
+[**English**](README.md) · [简体中文](README.zh-CN.md)
+
 # discord_agents
 
-Concurrent, isolated Claude Code agents that coordinate over Discord. Each
-bot has its own Discord identity, its own config, its own memory, and its
-own role spec. They talk to humans in shared channels and to each other
-via `@`-mentions (gated by a per-sender rate-limited allowlist).
+A multi-provider AI agent mesh, orchestrated on Discord. Every bot is
+a **native provider agent** — not a thin LLM-API chat wrapper — so each
+model contributes its full agentic strength (tool use, file system,
+code execution, plugins, MCPs). Discord is the coordination plane:
+specialists `@`-mention each other to hand off work, and you send /
+receive tasks from any device.
 
 ```
-                 ┌────────────────────────────┐
-                 │   Discord server / channel │
-                 └──────┬────────────┬────────┘
-                        │            │
-              ┌─────────┴───┐   ┌────┴─────────┐
-              │  Bot A      │   │   Bot B      │   ...
-              │ Orchestrator│   │ Synthesizer  │
-              │             │◀─▶│              │
-              │ Claude Code │   │  Claude Code │
-              │  session    │   │   session    │
-              └─────────────┘   └──────────────┘
-                  isolated         isolated
-                  config/memory    config/memory
+                  ┌────────────────────────────────────────┐
+                  │      Discord server / channel          │
+                  └──┬──────────┬──────────┬───────────────┘
+                     │          │          │
+              ┌──────┴──┐  ┌────┴────┐  ┌──┴───────┐
+              │  Bot A  │  │  Bot B  │  │  Bot C   │   ...
+              │ Claude  │  │ Claude  │  │  Codex   │
+              │  Code   │  │  Code   │  │   CLI    │
+              │ (Orch.) │◀▶│(Synth.) │◀▶│ (Critic) │
+              └─────────┘  └─────────┘  └──────────┘
+                isolated     isolated     isolated
+                config /     config /     config /
+                memory       memory       memory
 ```
+
+## Why this exists
+
+A typical "LLM bot" wraps a provider's **completion endpoint** — text in,
+text out, no tool use, no file system, no skills. This project wraps
+each provider's **agent product**:
+
+- **Claude bots → Claude Code**: full tool catalog (Bash, Read/Write,
+  Edit, WebFetch, WebSearch), skills system, plugin ecosystem, MCP
+  servers (Gmail, Drive, computer-use, …), `--dangerously-skip-permissions`
+  for autonomous operation. The bot isn't just generating text — it's
+  reading repo files, running tests, hitting external APIs, editing code.
+- **Codex bots → OpenAI Codex CLI**: the same idea on the OpenAI side —
+  Codex's native agent runtime, with its own tool use, file system access,
+  and repository awareness.
+- **(Roadmap) Gemini / Mistral / others**: pluggable as each provider's
+  native agent runtime matures.
+
+Each agent is a **specialist with its own native strengths**, not a
+lowest-common-denominator chat interface. The mesh routes work at the
+agent layer.
+
+## Why Discord
+
+- **One channel, all agents present.** `@`-mentions route work; the
+  channel history is shared context; you can scroll up to see the full
+  thread.
+- **Multi-device sync for free.** Discord already runs on mobile / web /
+  desktop / watch. Send a task from your phone in line at a coffee shop;
+  read the result on your laptop at home — no custom dashboard required.
+- **Asynchronous.** Agents wake on `@`-mention, do their work, hand off.
+  No always-on UI needed.
+- **Permissioned out of the box.** Per-bot allowlists, group-channel
+  gating, DM pairing. Random people can't trigger your agents.
+- **Bot-to-bot reachable.** A local patch to the Discord plugin lets
+  agents `@` each other, gated by `shared/peer-bots.json` with
+  per-sender rate limiting (kills runaway loops).
+
+## How a task flows (4-agent example)
+
+1. You DM or `@` the **Orchestrator** with a research question.
+2. Orchestrator dispatches the **Scout** to gather evidence. Scout's
+   native agent runs forward / counter / regional searches in parallel
+   and returns an info packet.
+3. Orchestrator routes to the **Synthesizer**. Synth produces a
+   falsifiable thesis with explicit P (probability) and E (effect
+   magnitude) estimates, plus an L0-L5 evidence tree.
+4. Orchestrator routes to the **Critic**. Critic red-teams across five
+   attack layers; flags fatal flaws.
+5. Synth revises; Critic re-audits. Iterate until convergence or a
+   3-round threshold triggers operator escalation.
+6. Orchestrator delivers a three-part summary (technical / red-team /
+   plain-language) — to your phone, in time for your next coffee break.
+
+Each step is a **native agent** doing what it's best at, not a single
+context-window juggling everything.
 
 ## Highlights
 
-- **One slash command to add a bot**: `/agent-setup-mac <name>` (or `/agent-setup-wsl <name>` on WSL2/Linux) scaffolds the
-  agent directory, copies and patches the Discord plugin, writes
+- **One slash command to add a bot**: `/agent-setup-mac <name>` (or
+  `/agent-setup-wsl <name>` on WSL2 / Linux) scaffolds the agent
+  directory, copies and patches the Discord plugin, writes
   permissions, and registers a launch alias.
-- **Bot-to-bot `@`-mention support**: the upstream Discord plugin drops
-  all bot-authored messages; this repo's local patch allows peers listed
-  in `shared/peer-bots.json` through, with per-sender rate limiting.
-- **Per-bot isolation**: each agent's plugin cache, settings, memory, and
-  Discord state are scoped to its own directory via `CLAUDE_CONFIG_DIR`
-  and `DISCORD_STATE_DIR` env vars. Two bots on the same machine never
-  collide.
-- **Cross-platform**: ships with `/agent-setup-mac` for macOS
-  and `/agent-setup-wsl` for WSL2 / Linux.
-- **Migration-friendly**: roles, memory, and allowlists are git-tracked;
-  the only things that need an out-of-band transfer are Discord bot
-  tokens (which must never go through git — Discord auto-revokes leaked
-  tokens via GitHub Secret Scanning).
+- **Per-bot isolation.** Each agent's plugin cache, settings, memory,
+  and Discord state are scoped to its own directory via
+  `CLAUDE_CONFIG_DIR` and `DISCORD_STATE_DIR` env vars. Bots on the
+  same machine never collide.
+- **Bot-to-bot `@`-mention support.** The upstream Discord plugin drops
+  all bot-authored messages; this repo's local patch allows peer bots
+  listed in `shared/peer-bots.json` through, with per-sender rate
+  limiting.
+- **Cross-platform.** Ships with `/agent-setup-mac` for macOS and
+  `/agent-setup-wsl` for WSL2 / Linux.
+- **Migration-friendly.** Roles, memory, and allowlists are git-tracked;
+  the only thing that needs an out-of-band transfer is the Discord bot
+  token (never push that to git — Discord auto-revokes leaked tokens
+  via GitHub Secret Scanning).
 
 ## Quickstart
 
-After installing Claude Code and the Discord plugin (see [SETUP.md
-§ Part 1](SETUP.md#part-1--one-time-bootstrap-per-machine)):
+After installing Claude Code and the Discord plugin (see
+[SETUP.md § Part 1](SETUP.md#part-1--one-time-bootstrap-per-machine)):
 
 ```bash
 cd ~/Projects && git clone <this-repo> agents_team && cd agents_team
 claude
-# In the Claude session:
+# in the Claude session:
 /agent-setup-mac claude-a    # or /agent-setup-wsl on Linux
 /exit
 
-source ~/.bashrc                     # or ~/.zshrc
-bot-a                                # launches the new bot
-# In the bot's Claude session:
+source ~/.bashrc                       # or ~/.zshrc on macOS
+bot-a                                  # launches the new bot
+# in the bot's Claude session:
 /discord:configure <YOUR_BOT_TOKEN>
 /exit
 bot-a
-/mcp                                 # should show plugin:discord:discord connected
+/mcp                                   # plugin:discord:discord should be connected
 ```
 
 Then DM the bot, run `/discord:access pair <code>` to allowlist
 yourself, and you're live.
 
-Full walkthrough — including creating the Discord bot Application,
-inviting it to a server, configuring roles, troubleshooting common
-errors, and migrating across machines — is in **[SETUP.md](SETUP.md)**.
+Full walkthrough — creating the Discord bot Application, inviting it
+to a server, configuring roles, troubleshooting, migrating across
+machines — in **[SETUP.md](SETUP.md)**.
 
 ## Repository layout
 
 ```
 agents_team/
-├── README.md              ← you are here
-├── SETUP.md               ← full deployment guide (read this for setup)
+├── README.md                ← this file
+├── README.zh-CN.md          ← 中文版
+├── SETUP.md                 ← full deployment guide
 ├── .gitignore
 ├── .claude/skills/
 │   ├── agent-setup-mac/         ← /agent-setup-mac (macOS, writes to ~/.zshrc)
-│   └── agent-setup-wsl/         ← /agent-setup-wsl (WSL2/Linux, writes to ~/.bashrc)
+│   └── agent-setup-wsl/         ← /agent-setup-wsl (WSL2 / Linux, writes to ~/.bashrc)
 ├── shared/
-│   └── peer-bots.json     ← cross-bot allowlist
+│   └── peer-bots.json       ← cross-bot allowlist (Application IDs)
 └── agents/
-    └── <name>/            ← one directory per bot
-        ├── CLAUDE.md      ← role pointer + conventions
-        └── .agent-config/ ← isolated config (token gitignored; allowlist tracked)
+    └── <name>/
+        ├── CLAUDE.md            ← identity + role pointer + conventions
+        └── .agent-config/
+            ├── role.md          ← full role spec for this agent
+            └── channels/discord/
+                └── access.json  ← allowlist / groups / dmPolicy
 ```
 
 See [SETUP.md § Reference: file layout](SETUP.md#reference-file-layout)
-for the per-agent directory structure in full.
+for the per-agent structure in full.
 
-## Roles in this repo
+## Roles in this repo (as a starting point)
 
 This repo is configured for a 4-agent research mesh. Each agent's
-`CLAUDE.md` and `role.md` define the discipline:
+`CLAUDE.md` + `.agent-config/role.md` define the discipline:
 
-| Agent | Role | Primary responsibility |
-|-------|------|------------------------|
-| `claude-a` | Scout + Orchestrator | Routes work, enforces handoff discipline, escalates to human at threshold |
-| `claude-b` | Synthesizer | Produces opinionated, falsifiable judgments (L0/L1-L5/Steelman structure) |
-| `claude-c` | Critic | Red-teams Synthesizer output |
-| `claude-d` | Reserved | Scout placeholder; reassign as needed |
+| Agent | Role | Native runtime | Primary responsibility |
+|-------|------|---------------|------------------------|
+| `claude-a` | Orchestrator | Claude Code | Routes work, enforces handoff discipline, escalates to human at threshold |
+| `claude-b` | Synthesizer | Claude Code | Produces opinionated, falsifiable judgments (L0/L1-L5/Steelman structure) |
+| `claude-c` | Critic | Claude Code | Red-teams Synthesizer output across 5 attack layers |
+| `claude-d` | Scout | Claude Code | Stateless information courier with mandatory counter-evidence self-check |
 
-For your own use, edit each agent's `CLAUDE.md` to redefine roles —
-nothing in the infrastructure assumes specific role names.
+For your own use, edit each agent's `CLAUDE.md` and `role.md` to
+redefine roles — nothing in the infrastructure assumes specific names.
+Swap a Claude bot for a Codex bot by changing the launch command.
 
 ## Security notes
 
-- Discord bot tokens (`.env` files) are never committed; transfer them
-  between machines via password manager, encrypted note, or USB.
-- Memory files, allowlists, role specs, and channel IDs are committed —
-  these are Discord public snowflakes, not credentials.
+- Discord bot tokens (`.env` files) are never committed. Transfer them
+  between machines via password manager / encrypted note / USB. Pushing
+  a token to GitHub triggers automatic revocation by Discord (via the
+  GitHub Secret Scanning partnership).
+- Public Discord snowflakes (user IDs, channel IDs, bot Application
+  IDs) are not credentials — committing them is fine.
 - See [SETUP.md § Security model](SETUP.md#security-model) for the full
   threat model.
 
@@ -121,4 +190,5 @@ MIT.
 
 Built on top of [Anthropic Claude Code](https://claude.ai/code) and the
 official [discord plugin](https://github.com/anthropics/claude-plugins-official).
-The bot-to-bot inbound patch in `server.ts` is local to this repo.
+The bot-to-bot inbound patch in `server.ts` and the multi-bot isolation
+scaffolding are local to this repo.
