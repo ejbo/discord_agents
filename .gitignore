@@ -1,0 +1,58 @@
+# Mac metadata
+.DS_Store
+
+# ────────────────────────────────────────────────────────────────────────────
+# Per-agent isolated config (.agent-config/) — only keep role specs & memory.
+# Everything else under .agent-config/ is either sensitive (tokens, OAuth,
+# DM channel mappings, allowlists) or regenerable (plugin cache, sessions,
+# history, debug logs, backups, caches).
+# ────────────────────────────────────────────────────────────────────────────
+
+# Sensitive — NEVER commit
+# Inside channels/discord/: .env holds Discord bot tokens (secrets). The rest
+# (access.json allowlist, approved/ DM-channel mappings) are public Discord
+# snowflakes that aid migration, so we DO commit those.
+agents/*/.agent-config/channels/discord/.env
+# Discord message attachment cache — ephemeral working data
+agents/*/.agent-config/channels/discord/inbox/
+agents/*/.agent-config/.claude.json
+agents/*/.agent-config/.claude.json.backup.*
+agents/*/.agent-config/mcp-needs-auth-cache.json
+
+# Heavy and regenerable via /agent-setup
+agents/*/.agent-config/plugins/
+
+# Ephemeral session/runtime state
+agents/*/.agent-config/sessions/
+agents/*/.agent-config/debug/
+agents/*/.agent-config/cache/
+agents/*/.agent-config/backups/
+agents/*/.agent-config/file-history/
+agents/*/.agent-config/shell-snapshots/
+agents/*/.agent-config/session-env/
+agents/*/.agent-config/history.jsonl
+agents/*/.agent-config/settings.json
+
+# Auto-generated per-project state (path encodes absolute machine path,
+# so not portable across machines). The role specs that mattered have been
+# moved to .agent-config/role.md (tracked).
+agents/*/.agent-config/projects/
+
+# Task locks and tool-result spills (ephemeral, per-machine)
+agents/*/.agent-config/tasks/
+agents/*/.agent-config/.last-cleanup
+
+# Per-agent local settings cache (.claude/settings.local.json) — auto-generated
+# user permission cache; never portable across users.
+agents/*/.claude/
+
+# Workspace dirs (currently empty placeholders)
+agents/*/workspace/
+
+# Shared scratch
+shared/inbox/
+
+# Editor / OS
+*.swp
+.vscode/
+.idea/

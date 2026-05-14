@@ -1,0 +1,11 @@
+{
+  "_comment": "Discord bot Application IDs allowed to message each other via the patched discord plugin. The plugin server.ts re-reads this file on every bot-to-bot inbound (no restart needed when adding peers). Find a bot's Application ID at https://discord.com/developers/applications -> your app -> General Information -> Application ID.",
+  "bots": [
+    { "id": "<BOT_A_APPLICATION_ID>", "name": "claude-a", "role": "orchestrator" },
+    { "id": "<BOT_B_APPLICATION_ID>", "name": "claude-b", "role": "synthesizer" },
+    { "id": "<BOT_C_APPLICATION_ID>", "name": "claude-c", "role": "critic" },
+    { "id": "<BOT_D_APPLICATION_ID>", "name": "claude-d", "role": "scout" }
+  ],
+  "rateLimitPerMin": 30,
+  "rateLimitNote": "Per-sender hard cap to prevent runaway loops. ~1 message every 2 seconds on average; enough for normal multi-round discussion; only catches extreme spam. Tune up if discussions get throttled."
+}
