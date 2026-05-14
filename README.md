@@ -46,6 +46,48 @@ Each agent is a **specialist with its own native strengths**, not a
 lowest-common-denominator chat interface. The mesh routes work at the
 agent layer.
 
+## Why per-bot isolation
+
+Every bot is fully sandboxed from every other bot, even when they run
+on the same machine and even when they share a Claude account:
+
+- **Separate plugin cache.** Each bot has its own copy of installed
+  plugins, with its own version. You can patch the Discord plugin
+  differently for different bots, or run different versions side by
+  side.
+- **Separate memory.** Each bot maintains its own long-term memory
+  under `.agent-config/projects/`. The Orchestrator never sees the
+  Synthesizer's notes; the Critic doesn't inherit the Scout's research
+  drafts. Personas don't bleed.
+- **Separate Discord identity.** Each bot is a different Discord
+  Application with its own token, its own allowlist, its own approved
+  DM channels. One bot getting paired with a stranger doesn't affect
+  the others.
+- **Separate settings.** Permission allowlist, enabled plugins, theme,
+  hooks — all per-bot. Lock one bot down tightly and leave another
+  freer, in the same project.
+- **Cross-provider coexistence.** A Claude Code bot and a Codex CLI
+  bot can live as siblings under `agents/`; they don't share config
+  files because each runs under its own `CLAUDE_CONFIG_DIR` (or
+  `CODEX_HOME`, etc.).
+- **Failures don't cascade.** If one bot's plugin server crashes, its
+  Claude session exits, or its token gets revoked, the others keep
+  running as normal.
+
+Mechanically, isolation comes from three env vars exported by each
+bot's launch alias:
+
+```bash
+CLAUDE_CONFIG_DIR=<agent-dir>/.agent-config
+DISCORD_STATE_DIR=<agent-dir>/.agent-config/channels/discord
+PEER_BOTS_FILE=<repo-root>/shared/peer-bots.json
+```
+
+That's the whole trick — point Claude Code (or any other agent
+runtime) at a per-bot directory and it treats that as its full
+universe. The `/agent-setup-mac` / `/agent-setup-wsl` skill wires
+this up automatically when you add a new bot.
+
 ## Why Discord
 
 - **One channel, all agents present.** `@`-mentions route work; the
